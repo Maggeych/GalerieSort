@@ -1,6 +1,8 @@
 import QtQuick 2.3
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 1.4
+import QtQuick.Dialogs 1.0
+import Qt.labs.folderlistmodel 1.0
 
 ApplicationWindow {
   id: mainWindow
@@ -8,12 +10,12 @@ ApplicationWindow {
 	title: "Main Window"
 	color: "#222222"
   toolBar: ToolBar {
-    RowLayout {
-      anchors.centerIn: parent
-      Item {
-          anchors.centerIn: parent
+      Column {
+        Button {
+          text: "Select folder for browsing..."
+          onClicked: fileDialog.open()
+        }
         Slider { 
-          anchors.centerIn: parent
           width: 200
           id: zoomSlider
           minimumValue: 100
@@ -21,49 +23,50 @@ ApplicationWindow {
           value: 200
         }
       }
+  }
+
+  FileDialog {
+    id: fileDialog
+    title: "Choose a folder with some images"
+    selectFolder: true
+    onAccepted: folderModel.folder = fileUrl + "/"
+  }
+
+  SplitView {
+    anchors.fill: parent
+    ScrollView {
+      Rectangle {
+        anchors {
+          topMargin: 20; bottomMargin: 20
+          leftMargin: 20; rightMargin: 20
+        }
+        width: 100
+        height: 100
+      }
+    }
+
+    ScrollView {
+      GridView {
+        id: browser
+        interactive: false
+        cellWidth: zoomSlider.value; cellHeight: (3 / 4) * zoomSlider.value;
+        anchors {
+          topMargin: 20; bottomMargin: 20
+          leftMargin: 20; rightMargin: 20
+          fill: parent
+        }
+
+        FolderListModel { 
+          id: folderModel
+          objectName: "folderModel"
+          folder: "/home/maggeych/Pictures/" 
+          sortField: "Time"
+          nameFilters: imageNameFilters
+          showDirs: false
+        }
+        model: folderModel
+        delegate: IconItem { }
+      }
     }
   }
-	GridView {
-		id: grid
-		interactive: false
-		anchors {
-			topMargin: 30; bottomMargin: 30
-			leftMargin: 30; rightMargin: 30
-			fill: parent
-		}
-		cellWidth: zoomSlider.value; cellHeight: zoomSlider.value;
-		model: WidgetModel { id: icons }
-		delegate: IconItem { }
-		MouseArea {
-		  property int selectedId: -1
-			property int currentId: -1 // Original position in model
-			property int newIndex // Current Position in model
-			property int index: grid.indexAt(mouseX, mouseY) // Item underneath cursor
-			id: loc
-			hoverEnabled: true
-			preventStealing: true
-			anchors.fill: parent
-      onPressAndHold: {
-        if (index > -1) 
-          currentId = icons.get(newIndex = index).gridId
-      }
-      onClicked: {
-        if (index > -1) {
-          var gId = icons.get(index).gridId
-          selectedId = selectedId != gId ? gId : -1
-        } else {
-          selectedId = -1
-        }
-      }
-			onReleased: currentId = -1
-			onPositionChanged: {
-        if (currentId != -1 && index != -1 && index != newIndex) {
-          if (icons.get(index).type == "folder") {
-          } else {
-            icons.move(newIndex, newIndex = index, 1)
-          }
-        }
-			}
-		}
-	}
 }
